@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 from datetime import datetime
+import talib
+import numpy as np
 import re
 
 class NewsEDA:
@@ -64,3 +66,33 @@ class NewsEDA:
         print(domain_counts.head())
         domain_counts.head(10).plot(kind='bar', title='Top Publisher Domains')
         plt.show()
+        
+class TechnicalAnalysis:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df.copy()
+        self.prices = self.df['Close'].to_numpy(dtype='float64')
+
+    def sma(self, window):
+        return talib.SMA(self.prices, timeperiod=window)
+
+    def add_rsi(self, period: int = 14) -> pd.DataFrame:
+        self.df['RSI'] = talib.RSI(self.prices, timeperiod=period)
+        return self.df
+
+    def add_macd(self,
+                 fastperiod: int = 12,
+                 slowperiod: int = 26,
+                 signalperiod: int = 9) -> pd.DataFrame:
+        macd, macd_signal, macd_hist = talib.MACD(
+            self.prices,
+            fastperiod=fastperiod,
+            slowperiod=slowperiod,
+            signalperiod=signalperiod
+        )
+        self.df['MACD'] = macd
+        self.df['MACD_Signal'] = macd_signal
+        self.df['MACD_Hist'] = macd_hist
+        return self.df
+
+    def get_data(self) -> pd.DataFrame:
+        return self.df
