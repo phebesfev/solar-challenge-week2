@@ -13,3 +13,5 @@ def test_init():
     eda = NewsEDA(df)
     assert not eda.df.empty
     assert 'date' in eda.df.columns
+    assert pd.api.types.is_datetime64_any_dtype(eda.df['date'])  # ensure date is parsed
+    assert not eda.df['date'].isnull().any()  # no parsing failures

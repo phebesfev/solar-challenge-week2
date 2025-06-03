@@ -3,7 +3,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 from datetime import datetime
+import talib
+import numpy as np
 import re
+import pynance as pn
 
 class NewsEDA:
     def __init__(self, df):
@@ -64,3 +67,70 @@ class NewsEDA:
         print(domain_counts.head())
         domain_counts.head(10).plot(kind='bar', title='Top Publisher Domains')
         plt.show()
+        
+class TechnicalAnalysis:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df.copy()
+        self.prices = self.df['Close'].to_numpy(dtype='float64')
+
+    def sma(self, window):
+        return talib.SMA(self.prices, timeperiod=window)
+
+    def add_rsi(self, period: int = 14) -> pd.DataFrame:
+        self.df['RSI'] = talib.RSI(self.prices, timeperiod=period)
+        return self.df
+
+    def add_macd(self,
+                 fastperiod: int = 12,
+                 slowperiod: int = 26,
+                 signalperiod: int = 9) -> pd.DataFrame:
+        macd, macd_signal, macd_hist = talib.MACD(
+            self.prices,
+            fastperiod=fastperiod,
+            slowperiod=slowperiod,
+            signalperiod=signalperiod
+        )
+        self.df['MACD'] = macd
+        self.df['MACD_Signal'] = macd_signal
+        self.df['MACD_Hist'] = macd_hist
+        return self.df
+
+    def get_data(self) -> pd.DataFrame:
+        return self.df
+    
+class FinancialAnalysis:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df.copy()
+
+    def cumulative_return(self):
+        self.df['Cumulative Return'] = self.df['Adj Close'] / self.df['Adj Close'].iloc[0] - 1
+        return self.df
+
+    def daily_volatility(self):
+        self.df['Daily Return'] = self.df['Adj Close'].pct_change()
+        self.df['Daily Volatility'] = self.df['Daily Return'].rolling(window=20).std()
+        return self.df
+    def plot_cumulative_return(self):
+        if 'Cumulative Return' not in self.df.columns:
+            self.cumulative_return()
+        plt.figure(figsize=(12, 5))
+        plt.plot(self.df['Date'], self.df['Cumulative Return'], label='Cumulative Return')
+        plt.title('Cumulative Return Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Cumulative Return')
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+    def plot_daily_volatility(self):
+        if 'Daily Volatility' not in self.df.columns:
+            self.daily_volatility()
+        plt.figure(figsize=(12, 5))
+        plt.plot(self.df['Date'], self.df['Daily Volatility'], label='20-Day Rolling Volatility', color='orange')
+        plt.title('Daily Volatility Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Volatility')
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
